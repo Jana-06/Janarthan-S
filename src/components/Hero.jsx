@@ -68,7 +68,7 @@ export default function Hero({ lenisRef }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="flex flex-wrap items-center gap-4"
+          className="hero-actions flex flex-wrap items-center gap-4"
         >
           <button
             id="hero-view-work-btn"
@@ -88,8 +88,8 @@ export default function Hero({ lenisRef }) {
             <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
             Get my resume
           </a>
+          <p className="hero-location">Available for product-focused roles <span>·</span> Open to collaboration</p>
         </motion.div>
-        <p className="hero-location">Available for product-focused roles <span>·</span> Open to collaboration</p>
         </div>
       </div>
 

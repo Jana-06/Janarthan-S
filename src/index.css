@@ -1755,6 +1755,7 @@ body {
 .hero-statement { max-width: 9ch; margin-top: 1.3rem; font-size: clamp(3.2rem,6.3vw,7rem); line-height: .9; }
 .hero-description { max-width: 42ch; margin-top: 1.35rem; color: rgba(246,243,236,.72); }
 .hero-location { color: rgba(246,243,236,.58); }
+.hero-actions .hero-location { flex: 1 1 220px; max-width: 21rem; margin: 0; line-height: 1.45; }
 .hero-portrait-wrap { position: absolute; z-index: 0; inset: 6.5rem clamp(2rem,8vw,9rem) 3.4rem auto; width: auto; height: auto; aspect-ratio: 1065 / 1500; max-width: none; margin: 0; pointer-events: none; }
 .hero-portrait { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; -webkit-mask-image: none; mask-image: none; background: #191917; }
   .hero-portrait img { object-fit: cover; object-position: 50% 42%; filter: brightness(.72) saturate(.78) contrast(1.04); animation: portrait-settle 1.5s cubic-bezier(.2,.8,.2,1) both; }
@@ -1777,9 +1778,11 @@ body {
   .hero-stage > .hero-layout { padding: 7rem 0 10rem; }
   .hero-statement { font-size: clamp(2.9rem,11vw,4rem); }
   .hero-description { font-size: .96rem; }
+  .hero-actions { gap: .75rem; }
+  .hero-actions .hero-location { flex: 1 1 100%; max-width: none; margin-top: .15rem; }
   .hero-portrait-wrap { inset-block: 6rem 7.2rem; }
   .hero-portrait img { object-position: 50% 34%; }
-  .hero-wordmark { bottom: 2rem; font-size: clamp(3rem,11.4vw,4.2rem); }
+  .hero-wordmark { bottom: 1rem; font-size: clamp(2.8rem,10.8vw,4rem); }
 }
 
 .toolkit { margin-top: clamp(5rem, 9vw, 8rem); }
