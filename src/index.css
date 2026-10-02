@@ -1760,8 +1760,8 @@ body {
 .hero-portrait { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; -webkit-mask-image: none; mask-image: none; background: #191917; }
   .hero-portrait img { object-fit: cover; object-position: 50% 42%; filter: brightness(.72) saturate(.78) contrast(1.04); animation: portrait-settle 1.5s cubic-bezier(.2,.8,.2,1) both; }
 .hero-portrait__caption, .hero-portrait-stamp, .hero-portrait-orbit { display: none; }
-.hero-wordmark { z-index: 5; left: max(2rem, calc((100vw - 1440px) / 2)); right: max(2rem, calc((100vw - 1440px) / 2)); bottom: 3.2rem; font-size: clamp(4.8rem,13.1vw,14rem); }
-.hero-stage::after { z-index: 6; bottom: 2rem; background: rgba(246,243,236,.25); }
+.hero-wordmark { z-index: 5; left: max(2rem, calc((100vw - 1440px) / 2)); right: max(2rem, calc((100vw - 1440px) / 2)); bottom: .55rem; font-size: clamp(4.8rem,12vw,12.5rem); }
+.hero-stage::after { z-index: 6; bottom: .2rem; background: rgba(246,243,236,.25); }
 
 @media (max-width: 800px) {
   .hero-stage { min-height: 860px; min-height: max(100svh, 820px); }
@@ -1770,8 +1770,8 @@ body {
   .hero-statement { font-size: clamp(3rem,9vw,5.4rem); }
   .hero-portrait-wrap { inset: 6.2rem 0 7rem auto; height: auto; width: auto; aspect-ratio: 1065 / 1500; }
   .hero-portrait img { object-position: 50% 34%; filter: brightness(.4) saturate(.72) contrast(1.05); }
-  .hero-wordmark { left: 1rem; right: 1rem; bottom: 2.2rem; font-size: clamp(3.25rem,12.2vw,6.7rem); }
-  .hero-stage::after { bottom: 1.25rem; }
+  .hero-wordmark { left: 1rem; right: 1rem; bottom: .55rem; font-size: clamp(3rem,11vw,5.8rem); }
+  .hero-stage::after { bottom: .2rem; }
 }
 @media (max-width: 480px) {
   .hero-stage { min-height: max(100svh, 760px); }
@@ -1782,7 +1782,7 @@ body {
   .hero-actions .hero-location { flex: 1 1 100%; max-width: none; margin-top: .15rem; }
   .hero-portrait-wrap { inset-block: 6rem 7.2rem; }
   .hero-portrait img { object-position: 50% 34%; }
-  .hero-wordmark { bottom: 1rem; font-size: clamp(2.8rem,10.8vw,4rem); }
+  .hero-wordmark { bottom: .55rem; font-size: clamp(2.7rem,10.2vw,3.8rem); }
 }
 
 .toolkit { margin-top: clamp(5rem, 9vw, 8rem); }
