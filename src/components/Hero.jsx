@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Download, ExternalLink } from 'lucide-react'
+import { Download, ExternalLink, MessageSquareText } from 'lucide-react'
 import CursorSpotlight from './CursorSpotlight'
 
 export default function Hero({ lenisRef }) {
@@ -87,6 +87,10 @@ export default function Hero({ lenisRef }) {
           >
             <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
             Get my resume
+          </a>
+          <a id="hero-feedback-btn" href="/feedback" className="hero-feedback-link group inline-flex items-center gap-2 px-5 py-3.5 text-sm font-semibold tracking-wide">
+            <MessageSquareText className="w-4 h-4" aria-hidden="true" />
+            Leave feedback
           </a>
           <p className="hero-location">Available for product-focused roles <span>·</span> Open to collaboration</p>
         </motion.div>

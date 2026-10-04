@@ -8,6 +8,7 @@ const navLinks = [
   { label: 'Skills', href: '#skills' },
   { label: 'Education', href: '#education' },
   { label: 'Contact', href: '#contact' },
+  { label: 'Feedback', href: '/feedback' },
 ]
 
 export default function Navbar({ lenisRef }) {
@@ -23,6 +24,7 @@ export default function Navbar({ lenisRef }) {
 
   useEffect(() => {
     const sections = navLinks
+      .filter((link) => link.href.startsWith('#'))
       .map((link) => document.querySelector(link.href))
       .filter(Boolean)
     const observer = new IntersectionObserver(
@@ -40,6 +42,10 @@ export default function Navbar({ lenisRef }) {
   }, [])
 
   const handleNavClick = (e, href) => {
+    if (href.startsWith('/')) {
+      setMenuOpen(false)
+      return
+    }
     e.preventDefault()
     setMenuOpen(false)
     const target = document.querySelector(href)

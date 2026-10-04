@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Mail, Phone, ArrowUpRight } from 'lucide-react'
+import FeedbackForm from './FeedbackForm'
 
 // GitHub icon SVG component
 const GithubIcon = ({ className }) => (
@@ -151,6 +152,11 @@ export default function Contact({ lenisRef }) {
             )
           })}
         </div>
+
+        <motion.div custom={7} variants={fadeUp} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
+          <FeedbackForm />
+          <p className="feedback-panel__more"><a href="/feedback">Open the dedicated feedback page <ArrowUpRight aria-hidden="true" size={15} /></a></p>
+        </motion.div>
 
         {/* Footer divider */}
         <div className="h-px bg-white/10 mb-8" />
