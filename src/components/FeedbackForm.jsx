@@ -74,7 +74,7 @@ export default function FeedbackForm({ standalone = false }) {
           />
         </label>
         <div className="feedback-form__actions">
-          <p id={standalone ? 'feedback-note-page' : 'feedback-note'}>Your name and email are visible only in the private owner dashboard.</p>
+          <p id={standalone ? 'feedback-note-page' : 'feedback-note'}>Your email stays private. Feedback you publish will appear as a review on the portfolio.</p>
           <button disabled={submitting || !supabaseConfigured} type="submit">
             {submitting ? 'Sending…' : 'Send feedback'} <ArrowUpRight aria-hidden="true" />
           </button>

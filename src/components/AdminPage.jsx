@@ -43,7 +43,7 @@ export default function AdminPage() {
     if (!isOwner) return
     setLoadError('')
     const [feedbackResult, itemsResult] = await Promise.all([
-      supabase.from('feedback').select('id, name, email, message, created_at').order('created_at', { ascending: false }),
+      supabase.from('feedback').select('id, name, email, message, is_public, created_at').order('created_at', { ascending: false }),
       supabase.from('portfolio_items').select('id, kind, title, description, image_path, file_path, created_at').order('created_at', { ascending: false }),
     ])
     if (feedbackResult.error || itemsResult.error) {
@@ -61,6 +61,15 @@ export default function AdminPage() {
     setAuthError('')
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) setAuthError('Sign in failed. Check the account and password, then try again.')
+  }
+
+  const handleReviewVisibility = async (entry) => {
+    const { error } = await supabase.from('feedback').update({ is_public: !entry.is_public }).eq('id', entry.id)
+    if (error) {
+      setLoadError('Could not update review visibility. Check that the latest Supabase setup SQL has been applied.')
+      return
+    }
+    setFeedback((current) => current.map((item) => item.id === entry.id ? { ...item, is_public: !entry.is_public } : item))
   }
 
   const uploadAsset = async (file, folder) => {
@@ -168,6 +177,9 @@ export default function AdminPage() {
               <article className="feedback-entry" key={entry.id}>
                 <div className="feedback-entry__meta"><h3>{entry.name}</h3><a href={`mailto:${entry.email}`}>{entry.email}</a><time dateTime={entry.created_at}>{formatDate(entry.created_at)}</time></div>
                 <p>{entry.message}</p>
+                <button className={`feedback-entry__publish${entry.is_public ? ' is-published' : ''}`} onClick={() => handleReviewVisibility(entry)} type="button">
+                  {entry.is_public ? 'Published on portfolio' : 'Publish as a review'}
+                </button>
               </article>
             ))}
           </div>
