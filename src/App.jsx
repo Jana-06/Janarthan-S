@@ -13,6 +13,7 @@ import ScrollProgress from './components/ScrollProgress'
 import PageIntro from './components/PageIntro'
 import CursorFollower from './components/CursorFollower'
 import { useLenis } from './hooks/useLenis'
+import PortfolioChat from './components/PortfolioChat'
 
 export default function App() {
   const lenisRef = useLenis()
@@ -35,6 +36,7 @@ export default function App() {
           <Reviews />
           <Contact lenisRef={lenisRef} />
         </main>
+        <PortfolioChat />
       </div>
     </MotionConfig>
   )

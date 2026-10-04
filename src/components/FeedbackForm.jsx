@@ -48,7 +48,7 @@ export default function FeedbackForm({ standalone = false }) {
       <div className="feedback-panel__intro">
         <p className="feedback-panel__eyebrow">A note from you</p>
         <h2>Help me make the next version better.</h2>
-        <p>Your review goes directly to my private feedback inbox.</p>
+          <p>Your review and name will appear on the portfolio. Your email stays private.</p>
       </div>
       <form className="feedback-form" onSubmit={handleSubmit}>
         <div className="feedback-form__details">
@@ -74,7 +74,7 @@ export default function FeedbackForm({ standalone = false }) {
           />
         </label>
         <div className="feedback-form__actions">
-          <p id={standalone ? 'feedback-note-page' : 'feedback-note'}>Your email stays private. Feedback you publish will appear as a review on the portfolio.</p>
+          <p id={standalone ? 'feedback-note-page' : 'feedback-note'}>By sending this, you agree that your name and feedback will appear publicly as a portfolio review. Your email stays private.</p>
           <button disabled={submitting || !supabaseConfigured} type="submit">
             {submitting ? 'Sending…' : 'Send feedback'} <ArrowUpRight aria-hidden="true" />
           </button>

@@ -6,18 +6,18 @@ create table if not exists public.feedback (
   name text not null check (char_length(name) between 1 and 120),
   email text not null check (char_length(email) between 3 and 254),
   message text not null check (char_length(message) between 1 and 3000),
-  is_public boolean not null default false,
   created_at timestamptz not null default now()
 );
-
-alter table public.feedback add column if not exists is_public boolean not null default false;
 
 create or replace view public.published_feedback
 with (security_barrier = true)
 as
   select id, name, message, created_at
-  from public.feedback
-  where is_public = true;
+  from public.feedback;
+
+-- Remove any legacy approval policy, replace the filtered view, then remove its flag.
+drop policy if exists "Only portfolio owner can publish feedback" on public.feedback;
+alter table public.feedback drop column if exists is_public;
 
 grant select on public.published_feedback to anon, authenticated;
 
@@ -36,7 +36,6 @@ alter table public.portfolio_items enable row level security;
 
 grant insert on public.feedback to anon, authenticated;
 grant select on public.feedback to authenticated;
-grant update (is_public) on public.feedback to authenticated;
 grant select on public.portfolio_items to anon, authenticated;
 grant insert, update, delete on public.portfolio_items to authenticated;
 
@@ -49,12 +48,6 @@ drop policy if exists "Only portfolio owner can read feedback" on public.feedbac
 create policy "Only portfolio owner can read feedback"
   on public.feedback for select to authenticated
   using (lower(coalesce(auth.jwt() ->> 'email', '')) = '10cjanarthansrvspm@gmail.com');
-
-drop policy if exists "Only portfolio owner can publish feedback" on public.feedback;
-create policy "Only portfolio owner can publish feedback"
-  on public.feedback for update to authenticated
-  using (lower(coalesce(auth.jwt() ->> 'email', '')) = '10cjanarthansrvspm@gmail.com')
-  with check (lower(coalesce(auth.jwt() ->> 'email', '')) = '10cjanarthansrvspm@gmail.com');
 
 drop policy if exists "Portfolio entries are public to read" on public.portfolio_items;
 create policy "Portfolio entries are public to read"

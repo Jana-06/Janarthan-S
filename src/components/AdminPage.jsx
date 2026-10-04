@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, ImagePlus, LogOut, Upload } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, ImagePlus, LogOut, Pencil, Trash2, Upload } from 'lucide-react'
 import { assetBucket, ownerEmail, supabase, supabaseConfigured } from '../lib/supabase'
+import PortfolioCopilot from './PortfolioCopilot'
 
 const emptyForm = { kind: 'achievement', title: '', description: '' }
 
@@ -10,22 +11,22 @@ function formatDate(value) {
 
 export default function AdminPage() {
   const [session, setSession] = useState(null)
-  const [checkingSession, setCheckingSession] = useState(true)
+  const [checkingSession, setCheckingSession] = useState(supabaseConfigured)
   const [email, setEmail] = useState(ownerEmail)
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
   const [feedback, setFeedback] = useState([])
   const [items, setItems] = useState([])
   const [form, setForm] = useState(emptyForm)
+  const [editingItem, setEditingItem] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [actionItemId, setActionItemId] = useState('')
   const [status, setStatus] = useState('')
+  const [itemActionStatus, setItemActionStatus] = useState('')
   const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
-    if (!supabaseConfigured) {
-      setCheckingSession(false)
-      return undefined
-    }
+    if (!supabaseConfigured) return undefined
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setCheckingSession(false)
@@ -41,35 +42,28 @@ export default function AdminPage() {
 
   const loadDashboard = useCallback(async () => {
     if (!isOwner) return
-    setLoadError('')
     const [feedbackResult, itemsResult] = await Promise.all([
-      supabase.from('feedback').select('id, name, email, message, is_public, created_at').order('created_at', { ascending: false }),
+      supabase.from('feedback').select('id, name, email, message, created_at').order('created_at', { ascending: false }),
       supabase.from('portfolio_items').select('id, kind, title, description, image_path, file_path, created_at').order('created_at', { ascending: false }),
     ])
     if (feedbackResult.error || itemsResult.error) {
       setLoadError('Could not load dashboard data. Check that the Supabase setup SQL has been applied.')
       return
     }
+    setLoadError('')
     setFeedback(feedbackResult.data ?? [])
     setItems(itemsResult.data ?? [])
   }, [isOwner])
 
-  useEffect(() => { loadDashboard() }, [loadDashboard])
+  useEffect(() => {
+    void Promise.resolve().then(loadDashboard)
+  }, [loadDashboard])
 
   const handleSignIn = async (event) => {
     event.preventDefault()
     setAuthError('')
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) setAuthError('Sign in failed. Check the account and password, then try again.')
-  }
-
-  const handleReviewVisibility = async (entry) => {
-    const { error } = await supabase.from('feedback').update({ is_public: !entry.is_public }).eq('id', entry.id)
-    if (error) {
-      setLoadError('Could not update review visibility. Check that the latest Supabase setup SQL has been applied.')
-      return
-    }
-    setFeedback((current) => current.map((item) => item.id === entry.id ? { ...item, is_public: !entry.is_public } : item))
   }
 
   const uploadAsset = async (file, folder) => {
@@ -85,7 +79,21 @@ export default function AdminPage() {
     return path
   }
 
-  const handleCreateItem = async (event) => {
+  const beginEditing = (item) => {
+    setEditingItem(item)
+    setForm({ kind: item.kind, title: item.title, description: item.description })
+    setStatus('')
+    document.getElementById('portfolio-add-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const cancelEditing = () => {
+    setEditingItem(null)
+    setForm(emptyForm)
+    setStatus('')
+    document.getElementById('portfolio-add-form')?.reset()
+  }
+
+  const handleSaveItem = async (event) => {
     event.preventDefault()
     setBusy(true)
     setStatus('')
@@ -94,30 +102,111 @@ export default function AdminPage() {
     const image = data.get('image')
     const file = data.get('file')
     const uploaded = []
+    const wasEditing = Boolean(editingItem)
+    let committed = false
     try {
       if (image?.size > 10 * 1024 * 1024) throw new Error('Choose an image under 10 MB.')
       if (file?.size > 25 * 1024 * 1024) throw new Error('Choose a file under 25 MB.')
-      if (image?.size && !image.type.startsWith('image/')) throw new Error('Choose a supported image file.')
-      const imagePath = image?.size ? await uploadAsset(image, 'images') : null
-      if (imagePath) uploaded.push(imagePath)
-      const filePath = file?.size ? await uploadAsset(file, 'files') : null
-      if (filePath) uploaded.push(filePath)
-      const { error } = await supabase.from('portfolio_items').insert({
+      if (image?.size && !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(image.type.toLowerCase())) throw new Error('Choose a PNG, JPEG, WebP, or GIF image.')
+      const removeImage = data.get('remove-image') === 'on'
+      const removeFile = data.get('remove-file') === 'on'
+      const imagePath = image?.size ? await uploadAsset(image, 'images') : editingItem?.image_path && !removeImage ? editingItem.image_path : null
+      if (image?.size) uploaded.push(imagePath)
+      const filePath = file?.size ? await uploadAsset(file, 'files') : editingItem?.file_path && !removeFile ? editingItem.file_path : null
+      if (file?.size) uploaded.push(filePath)
+      const values = {
         kind: form.kind,
         title: form.title.trim(),
         description: form.description.trim(),
         image_path: imagePath,
         file_path: filePath,
-      })
+      }
+      const result = editingItem
+        ? await supabase.from('portfolio_items').update(values).eq('id', editingItem.id).select('id').single()
+        : await supabase.from('portfolio_items').insert(values).select('id').single()
+      const { error } = result
       if (error) throw error
+      committed = true
+      const replacedAssets = editingItem
+        ? [
+            imagePath !== editingItem.image_path ? editingItem.image_path : null,
+            filePath !== editingItem.file_path ? editingItem.file_path : null,
+          ].filter(Boolean)
+        : []
+      let cleanupFailed = false
+      if (replacedAssets.length) {
+        try {
+          const { error: cleanupError } = await supabase.storage.from(assetBucket).remove(replacedAssets)
+          cleanupFailed = Boolean(cleanupError)
+          if (cleanupError) console.error('Old portfolio asset cleanup failed:', cleanupError)
+        } catch (cleanupError) {
+          cleanupFailed = true
+          console.error('Old portfolio asset cleanup failed:', cleanupError)
+        }
+      }
       setForm(emptyForm)
+      setEditingItem(null)
       formElement.reset()
-      setStatus('Saved to your Supabase project.')
-      await loadDashboard()
+      setStatus(wasEditing
+        ? (cleanupFailed ? 'Changes saved. An old attachment could not be removed; check your storage bucket.' : 'Your changes have been saved.')
+        : 'Saved to your Supabase project.')
+      try {
+        await loadDashboard()
+      } catch (refreshError) {
+        console.error('Saved portfolio entry could not be reloaded:', refreshError)
+        setLoadError('Your change was saved, but the list could not refresh. Reload the dashboard.')
+      }
     } catch (error) {
-      if (uploaded.length) await supabase.storage.from(assetBucket).remove(uploaded)
-      setStatus(error.message || 'Could not save this item. Try again.')
+      if (!committed && uploaded.length) {
+        try {
+          const { error: cleanupError } = await supabase.storage.from(assetBucket).remove(uploaded)
+          if (cleanupError) console.error('Failed upload cleanup failed:', cleanupError)
+        } catch (cleanupError) {
+          console.error('Failed upload cleanup failed:', cleanupError)
+        }
+      }
+      setStatus(committed
+        ? 'Your change was saved, but a follow-up step failed. Reload the dashboard before trying again.'
+        : error.message || 'Could not save this item. Try again.')
     } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleDeleteItem = async (item) => {
+    if (!window.confirm(`Delete "${item.title}" from the portfolio? This cannot be undone.`)) return
+    setActionItemId(item.id)
+    setBusy(true)
+    setItemActionStatus('')
+    try {
+      const { error } = await supabase.from('portfolio_items').delete().eq('id', item.id).select('id').single()
+      if (error) throw error
+      const assetPaths = [item.image_path, item.file_path].filter(Boolean)
+      let cleanupFailed = false
+      if (assetPaths.length) {
+        try {
+          const { error: cleanupError } = await supabase.storage.from(assetBucket).remove(assetPaths)
+          cleanupFailed = Boolean(cleanupError)
+          if (cleanupError) console.error('Deleted entry asset cleanup failed:', cleanupError)
+        } catch (cleanupError) {
+          cleanupFailed = true
+          console.error('Deleted entry asset cleanup failed:', cleanupError)
+        }
+      }
+      if (editingItem?.id === item.id) cancelEditing()
+      setItemActionStatus(cleanupFailed
+        ? 'Entry deleted. One or more attachments could not be removed from public storage; check the storage bucket.'
+        : 'Entry deleted from the portfolio.')
+      try {
+        await loadDashboard()
+      } catch (refreshError) {
+        console.error('Deleted portfolio entry could not be reloaded:', refreshError)
+        setLoadError('The entry was deleted, but the list could not refresh. Reload the dashboard.')
+      }
+    } catch (error) {
+      setItemActionStatus(error.message || 'Could not delete this entry. Try again.')
+    } finally {
+      setActionItemId('')
       setBusy(false)
     }
   }
@@ -164,6 +253,15 @@ export default function AdminPage() {
         <p>Private client feedback and a place to save new work and achievements.</p>
       </div>
 
+      <PortfolioCopilot
+        accessToken={session.access_token}
+        onDraft={(draft) => {
+          setForm({ kind: draft.kind, title: draft.title, description: draft.description })
+          setStatus('Julie’s draft is ready. Review the details before saving.')
+          document.getElementById('portfolio-add-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }}
+      />
+
       {loadError && <p className="admin-error" role="alert">{loadError}</p>}
 
       <section className="admin-section" aria-labelledby="feedback-inbox-title">
@@ -177,9 +275,6 @@ export default function AdminPage() {
               <article className="feedback-entry" key={entry.id}>
                 <div className="feedback-entry__meta"><h3>{entry.name}</h3><a href={`mailto:${entry.email}`}>{entry.email}</a><time dateTime={entry.created_at}>{formatDate(entry.created_at)}</time></div>
                 <p>{entry.message}</p>
-                <button className={`feedback-entry__publish${entry.is_public ? ' is-published' : ''}`} onClick={() => handleReviewVisibility(entry)} type="button">
-                  {entry.is_public ? 'Published on portfolio' : 'Publish as a review'}
-                </button>
               </article>
             ))}
           </div>
@@ -188,9 +283,9 @@ export default function AdminPage() {
 
       <section className="admin-section" aria-labelledby="portfolio-add-title">
         <div className="admin-section__heading">
-          <div><p className="private-page__eyebrow">Keep it current</p><h2 id="portfolio-add-title">Add an achievement or project</h2></div>
+          <div><p className="private-page__eyebrow">Keep it current</p><h2 id="portfolio-add-title">{editingItem ? 'Edit saved entry' : 'Add an achievement or project'}</h2></div>
         </div>
-        <form className="admin-form admin-form--item" onSubmit={handleCreateItem}>
+        <form className="admin-form admin-form--item" id="portfolio-add-form" onSubmit={handleSaveItem}>
           <div className="admin-item-fields">
             <label htmlFor="item-kind">Type</label>
             <select id="item-kind" onChange={(event) => setForm({ ...form, kind: event.target.value })} value={form.kind}>
@@ -202,15 +297,16 @@ export default function AdminPage() {
             <textarea id="item-description" maxLength={5000} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Add a description or context" required rows={4} value={form.description} />
           </div>
           <div className="admin-upload-fields">
-            <label className="admin-file-field" htmlFor="item-image"><ImagePlus aria-hidden="true" /><span><strong>Add an image</strong><small>Optional · PNG, JPEG, WebP, or GIF · up to 10 MB</small></span><input accept="image/png,image/jpeg,image/webp,image/gif" id="item-image" name="image" type="file" /></label>
-            <label className="admin-file-field" htmlFor="item-file"><Upload aria-hidden="true" /><span><strong>Attach a file</strong><small>Optional · up to 25 MB</small></span><input id="item-file" name="file" type="file" /></label>
+            <div><label className="admin-file-field" htmlFor="item-image"><ImagePlus aria-hidden="true" /><span><strong>{editingItem?.image_path ? 'Replace image' : 'Add an image'}</strong><small>Optional · PNG, JPEG, WebP, or GIF · up to 10 MB</small></span><input accept="image/png,image/jpeg,image/webp,image/gif" id="item-image" name="image" type="file" /></label>{editingItem?.image_path && <label className="admin-file-remove"><input name="remove-image" type="checkbox" /> Remove current image</label>}</div>
+            <div><label className="admin-file-field" htmlFor="item-file"><Upload aria-hidden="true" /><span><strong>{editingItem?.file_path ? 'Replace attachment' : 'Attach a file'}</strong><small>Optional · up to 25 MB</small></span><input id="item-file" name="file" type="file" /></label>{editingItem?.file_path && <label className="admin-file-remove"><input name="remove-file" type="checkbox" /> Remove current attachment</label>}</div>
           </div>
-          <div className="admin-form__actions"><p aria-live="polite" role="status">{status}</p><button disabled={busy} type="submit">{busy ? 'Saving…' : 'Save to portfolio'} <ArrowUpRight aria-hidden="true" size={16} /></button></div>
+          <div className="admin-form__actions"><p aria-live="polite" role="status">{status}</p><div className="admin-item__form-actions">{editingItem && <button className="admin-item__cancel" onClick={cancelEditing} type="button">Cancel edit</button>}<button disabled={busy} type="submit">{busy ? 'Saving…' : editingItem ? 'Save changes' : 'Save to portfolio'} <ArrowUpRight aria-hidden="true" size={16} /></button></div></div>
         </form>
       </section>
 
       <section className="admin-section" aria-labelledby="saved-items-title">
         <div className="admin-section__heading"><div><p className="private-page__eyebrow">Stored in Supabase</p><h2 id="saved-items-title">Saved entries</h2></div><span className="admin-count">{items.length} total</span></div>
+        <p className="admin-item__status" aria-live="polite" role="status">{itemActionStatus}</p>
         {items.length === 0 ? <p className="admin-empty">Your achievements and projects will appear here after you save them.</p> : (
           <div className="admin-item-list">
             {items.map((item) => {
@@ -218,7 +314,7 @@ export default function AdminPage() {
               const fileUrl = item.file_path ? supabase.storage.from(assetBucket).getPublicUrl(item.file_path).data.publicUrl : null
               return <article className="admin-item" key={item.id}>
                 {imageUrl && <img alt="" src={imageUrl} />}
-                <div><span className="admin-item__kind">{item.kind}</span><h3>{item.title}</h3><p>{item.description}</p><time dateTime={item.created_at}>{formatDate(item.created_at)}</time>{fileUrl && <a className="admin-item__file" href={fileUrl} rel="noreferrer" target="_blank">Open attached file <ArrowUpRight aria-hidden="true" size={14} /></a>}</div>
+                <div><span className="admin-item__kind">{item.kind}</span><h3>{item.title}</h3><p>{item.description}</p><time dateTime={item.created_at}>{formatDate(item.created_at)}</time>{fileUrl && <a className="admin-item__file" href={fileUrl} rel="noreferrer" target="_blank">Open attached file <ArrowUpRight aria-hidden="true" size={14} /></a>}<div className="admin-item__actions"><button disabled={Boolean(actionItemId) || busy} onClick={() => beginEditing(item)} type="button"><Pencil aria-hidden="true" size={15} /> Edit entry</button><button className="admin-item__delete" disabled={Boolean(actionItemId) || busy} onClick={() => handleDeleteItem(item)} type="button"><Trash2 aria-hidden="true" size={15} /> {actionItemId === item.id ? 'Deleting…' : 'Delete entry'}</button></div></div>
               </article>
             })}
           </div>

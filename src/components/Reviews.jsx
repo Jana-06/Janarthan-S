@@ -50,7 +50,7 @@ export default function Reviews() {
               <article className={`review-card${index === 0 ? ' review-card--featured' : ''}`} key={review.id}>
                 <div className="review-card__topline">
                   <span className="review-card__quote"><Quote size={19} aria-hidden="true" /></span>
-                  <span className="review-card__source">SHARED WITH PERMISSION</span>
+                  <span className="review-card__source">PORTFOLIO FEEDBACK</span>
                 </div>
                 <blockquote>{review.message}</blockquote>
                 <div className="review-card__byline">

@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { ArrowUpRight, Bot, Hospital, GraduationCap, Cpu, Package } from 'lucide-react'
+import { supabase, supabaseConfigured } from '../lib/supabase'
 
 const projects = [
   {
@@ -40,10 +41,10 @@ const projects = [
     id: 'julie',
     name: 'Julie',
     subtitle: 'Personal AI assistant',
-    award: '90% task-completion accuracy',
+    award: 'Local-first · in active development',
     description:
-      'A personal assistant for scheduling, reminders, and daily workflows, combining large language models, retrieval-augmented generation, and agent orchestration.',
-    tags: ['Python', 'LLMs', 'RAG', 'Prompt design'],
+      'A private assistant in development, pairing Android app control with a laptop-hosted local model and one-task authorization for sensitive actions.',
+    tags: ['Flutter', 'Android', 'Python', 'Ollama'],
     icon: Cpu,
     accent: '#828090',
   },
@@ -93,6 +94,29 @@ export default function Projects() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const [activeProject, setActiveProject] = useState(0)
+  const [portfolioItems, setPortfolioItems] = useState([])
+
+  useEffect(() => {
+    if (!supabaseConfigured) return undefined
+    let active = true
+    supabase.from('portfolio_items').select('id, kind, title, description, created_at').order('created_at', { ascending: false })
+      .then(({ data }) => { if (active && data) setPortfolioItems(data) })
+    return () => { active = false }
+  }, [])
+
+  const visibleProjects = [
+    ...projects,
+    ...portfolioItems.map((item) => ({
+      id: item.id,
+      name: item.title,
+      subtitle: item.kind === 'project' ? 'Portfolio project' : 'Achievement',
+      award: item.kind === 'project' ? 'Selected work' : 'Portfolio highlight',
+      description: item.description,
+      tags: [],
+      icon: item.kind === 'project' ? Package : Cpu,
+      accent: item.kind === 'project' ? '#778a8d' : '#a07863',
+    })),
+  ]
 
   return (
     <section id="projects" ref={ref} className="projects-section relative overflow-hidden py-32 md:py-40">
@@ -128,7 +152,7 @@ export default function Projects() {
         </div>
 
         <div className="project-accordion">
-          {projects.map((project, index) => {
+          {visibleProjects.map((project, index) => {
             const Icon = project.icon
             const active = activeProject === index
             return (
