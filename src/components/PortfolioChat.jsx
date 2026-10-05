@@ -6,6 +6,8 @@ const greeting = {
   role: 'assistant',
   content: 'Hi, I’m Julie. Ask me about Janarthan’s projects, experience, or skills.',
 }
+const isSimpleGreeting = (message) => /^(?:hi+|hello+|hey+|howdy|good morning|good afternoon|good evening)[\s!,.?]*$/i.test(message)
+const greetingReply = 'Hi! I can help you explore Janarthan’s projects, experience, and skills. What would you like to know?'
 
 export default function PortfolioChat() {
   const [open, setOpen] = useState(false)
@@ -22,6 +24,16 @@ export default function PortfolioChat() {
     event.preventDefault()
     const message = draft.trim()
     if (!message || busy || !endpoint) return
+
+    if (isSimpleGreeting(message)) {
+      setDraft('')
+      setMessages((current) => [
+        ...current,
+        { role: 'user', content: message },
+        { role: 'assistant', content: greetingReply },
+      ])
+      return
+    }
 
     const history = messages
       .filter((entry) => entry !== greeting)
