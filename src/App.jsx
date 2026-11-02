@@ -10,7 +10,6 @@ import Education from './components/Education'
 import Reviews from './components/Reviews'
 import Contact from './components/Contact'
 import ScrollProgress from './components/ScrollProgress'
-import PageIntro from './components/PageIntro'
 import CursorFollower from './components/CursorFollower'
 import { useLenis } from './hooks/useLenis'
 import PortfolioChat from './components/PortfolioChat'
@@ -21,7 +20,6 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative">
-        <PageIntro />
         <CursorFollower />
         <ScrollProgress />
         <Navbar lenisRef={lenisRef} />
